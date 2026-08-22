@@ -2,7 +2,6 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator
 
-# Длина колонки check_results.url
 MAX_URL_LENGTH = 2048
 MAX_URLS_PER_TASK = 100
 
