@@ -14,6 +14,7 @@ from broker.redis_helper import redis_helper
 from config import settings
 from database.db_helper import db_helper
 from logging_setup.logging_config import setup_logging
+from monitoring.counters import heartbeat
 from schemas.task_message import TaskMessage
 from services.check_service import mark_failed, process_task
 from worker.consumer import Message, StreamConsumer
@@ -22,6 +23,7 @@ log = structlog.get_logger("worker")
 
 
 def install_signal_handlers(stop_event: asyncio.Event) -> None:
+    """Graceful shutdown по SIGTERM"""
     loop = asyncio.get_running_loop()
     for sig in (signal.SIGTERM, signal.SIGINT):
         try:
@@ -109,6 +111,7 @@ async def run_worker(stop_event: asyncio.Event | None = None) -> None:
         ) as http_client:
             while not stop_event.is_set():
                 batch: list[Message] = []
+                await heartbeat(consumer_name)
 
                 try:
                     if time.monotonic() - last_claim > settings.worker.claim_interval_s:

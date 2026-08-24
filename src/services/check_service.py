@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from database.models.check_results import CheckResults
 from repositories import check_results as check_results_repo
+from monitoring.counters import record_task_failed, record_task_processed
 from repositories import tasks as tasks_repo
 from schemas.enums import TaskStatus
 from schemas.task_message import TaskMessage
@@ -21,6 +22,7 @@ async def process_task(
     http_client: httpx.AsyncClient,
     semaphore: asyncio.Semaphore,
 ) -> None:
+
     """Проверяет все URL задачи и сохраняет результаты."""
     urls = [str(url) for url in message.urls]
 
@@ -61,11 +63,17 @@ async def process_task(
         )
         await session.commit()
 
+    available = sum(outcome.is_available for outcome in outcomes)
+    await record_task_processed(
+        available=available,
+        unavailable=len(outcomes) - available,
+    )
+
     log.info(
         "task completed",
         urls_count=len(outcomes),
-        available=sum(outcome.is_available for outcome in outcomes),
-        unavailable=sum(not outcome.is_available for outcome in outcomes),
+        available=available,
+        unavailable=len(outcomes) - available,
         replaced_rows=deleted,
     )
 
@@ -75,6 +83,7 @@ async def mark_failed(
     task_id,
     session_factory: async_sessionmaker[AsyncSession],
 ) -> None:
+
     async with session_factory() as session:
         await tasks_repo.set_status(
             session,
@@ -82,3 +91,5 @@ async def mark_failed(
             status=TaskStatus.FAILED,
         )
         await session.commit()
+
+    await record_task_failed()

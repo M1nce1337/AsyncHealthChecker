@@ -20,6 +20,7 @@ class RedisConfig(BaseModel):
     stream_maxlen: int = 10_000
     block_ms: int = 5000
     batch_size: int = 10
+    metrics_prefix: str = "health_checker:metrics"
 
     @model_validator(mode="after")
     def check_socket_timeout(self) -> "RedisConfig":
@@ -28,6 +29,7 @@ class RedisConfig(BaseModel):
                 "socket_timeout должен превышать block_ms: "
                 f"{self.socket_timeout}s <= {self.block_ms / 1000}s"
             )
+
         return self
 
 
@@ -38,6 +40,12 @@ class WorkerConfig(BaseModel):
     claim_min_idle_ms: int = 60_000
     claim_interval_s: float = 30.0
     retry_delay_s: float = 2.0
+    heartbeat_ttl_s: int = 30
+
+
+class MetricsConfig(BaseModel):
+    enabled: bool = True
+    refresh_interval_s: float = 5.0
 
 
 class LogConfig(BaseModel):
@@ -56,6 +64,7 @@ class Settings(BaseSettings):
     db: DataBaseConfig
     redis: RedisConfig
     worker: WorkerConfig = WorkerConfig()
+    metrics: MetricsConfig = MetricsConfig()
     log: LogConfig = LogConfig()
 
 settings = Settings()

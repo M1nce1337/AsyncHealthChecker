@@ -22,9 +22,12 @@ async def check_url(
     url: str,
     semaphore: asyncio.Semaphore,
 ) -> UrlCheckOutcome:
+
     """Одна HTTP-проверка. Никогда не бросает исключение наружу."""
+
     async with semaphore:
         started = time.perf_counter()
+
         try:
             async with client.stream("GET", url) as response:
                 elapsed_ms = round((time.perf_counter() - started) * 1000, 2)
