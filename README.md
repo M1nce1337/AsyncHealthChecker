@@ -175,21 +175,7 @@ cd src
 | Переменная | По умолчанию | Назначение |
 |---|---|---|
 | `APP_CONFIG__DB__URL` | — | DSN PostgreSQL (обязательна) |
-| `APP_CONFIG__DB__POOL_SIZE` | `50` | размер пула соединений |
 | `APP_CONFIG__REDIS__URL` | — | DSN Redis (обязательна) |
-| `APP_CONFIG__REDIS__STREAM` | `health_checker:tasks` | имя стрима задач |
-| `APP_CONFIG__REDIS__GROUP` | `health_checker:workers` | имя consumer group |
-| `APP_CONFIG__REDIS__BLOCK_MS` | `5000` | таймаут блокирующего чтения |
-| `APP_CONFIG__REDIS__SOCKET_TIMEOUT` | `30` | таймаут сокета, должен быть больше `BLOCK_MS` |
-| `APP_CONFIG__WORKER__CONCURRENCY` | `10` | одновременных HTTP-проверок на воркер |
-| `APP_CONFIG__WORKER__REQUEST_TIMEOUT` | `10` | таймаут HTTP-проверки, секунды |
-| `APP_CONFIG__WORKER__MAX_ATTEMPTS` | `3` | попыток обработки до отправки в DLQ |
-| `APP_CONFIG__LOG__LEVEL` | `INFO` | уровень логирования |
-| `APP_CONFIG__LOG__JSON_FORMAT` | `true` | `false` — человекочитаемый вывод |
-| `APP_CONFIG__METRICS__ENABLED` | `true` | включение `/metrics` |
-| `APP_CONFIG__METRICS__REFRESH_INTERVAL_S` | `5` | как часто обновляются значения метрик |
-| `APP_PORT` | `8000` | порт приложения на хосте |
-| `PROMETHEUS_PORT` | `9090` | порт Prometheus на хосте |
 
 ## Тесты
 
@@ -206,15 +192,12 @@ cd src
 ..\.venv\Scripts\python -m pytest --cov --cov-report=term
 ```
 
-Покрытие кода приложения — 76%.
-
 ## Надёжность
 
 * **Доставка ровно одному воркеру** — consumer group Redis Streams.
 * **Восстановление после падения** — неподтверждённые сообщения подбирает `XAUTOCLAIM`.
 * **Битые сообщения** не роняют воркер: уходят в `health_checker:tasks:dlq`.
 * **Ретраи** — до `MAX_ATTEMPTS` попыток, затем задача помечается `failed`.
-* **Идемпотентность** — повторная обработка задачи заменяет прежние результаты.
 * **Graceful shutdown** — по SIGTERM воркер дорабатывает текущий батч и закрывает соединения.
 * **Логи** — JSON, в каждой записи задачи присутствует `task_id`.
 
