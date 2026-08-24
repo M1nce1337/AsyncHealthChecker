@@ -1,0 +1,9 @@
+[run]
+source = .
+omit =
+    tests/*
+    migration/*
+    main.py
+
+[report]
+skip_empty = True
